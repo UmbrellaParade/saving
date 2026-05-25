@@ -19,6 +19,15 @@
   margin: 4px 0 0;
 }
 
+.app-header-img {
+  display: block;
+  height: auto;
+  max-height: 64px;
+  max-width: 320px;
+  object-fit: contain;
+  width: auto;
+}
+
 .eyebrow {
   color: var(--muted);
   font-size: 12px;
@@ -727,6 +736,11 @@ button {
 @media (max-width: 560px) {
   .app-header h1 {
     font-size: 24px;
+  }
+
+  .app-header-img {
+    max-height: 48px;
+    max-width: 240px;
   }
 
   .settings-grid,

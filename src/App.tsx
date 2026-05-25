@@ -841,8 +841,11 @@ function App() {
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <p className="eyebrow">Saving</p>
-          <h1>Umbrella Parade Life Revolution</h1>
+          <img
+            src="/header.png"
+            alt="Umbrella Parade Life Revolution"
+            className="app-header-img"
+          />
         </div>
         <button
           className="icon-button"
