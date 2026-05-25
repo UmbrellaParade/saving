@@ -434,6 +434,38 @@ button {
   margin: 0;
 }
 
+.funded-button {
+  background: var(--field);
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  flex: 0 0 34px;
+  height: 34px;
+  width: 34px;
+}
+
+.funded-button.active {
+  background: #fff7df;
+  border-color: #e0c060;
+  color: #8a6200;
+}
+
+.funded-badge {
+  background: #fff7df;
+  border: 1px solid #e0c060;
+  border-radius: 4px;
+  color: #8a6200;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+  padding: 1px 5px;
+  vertical-align: middle;
+}
+
+.muted-text {
+  color: var(--muted) !important;
+  text-decoration: line-through;
+}
+
 .strategy-preview {
   color: var(--muted);
   display: -webkit-box;

@@ -13,6 +13,7 @@ import {
   Landmark,
   Lightbulb,
   LineChart,
+  PiggyBank,
   Plus,
   ReceiptText,
   ShieldCheck,
@@ -40,6 +41,7 @@ type FixedCost = {
   method: string
   loanId?: string
   active: boolean
+  fundedMonths: string[]
 }
 
 type LoanPaymentRecord = {
@@ -59,6 +61,7 @@ type Loan = {
   kind: string
   totalPayments: number
   paymentHistory: LoanPaymentRecord[]
+  fundedMonths: string[]
 }
 
 type Settings = {
@@ -204,6 +207,7 @@ function normalizeData(importedData: Partial<AppData>): AppData {
       kind: loan.kind || 'ローン',
       totalPayments: Number(loan.totalPayments) || 0,
       paymentHistory: Array.isArray(loan.paymentHistory) ? loan.paymentHistory : [],
+      fundedMonths: Array.isArray(loan.fundedMonths) ? loan.fundedMonths : [],
     }))
     .filter((loan) => loan.name && loanPayable(loan) > 0)
 
@@ -227,6 +231,7 @@ function normalizeData(importedData: Partial<AppData>): AppData {
       method: cost.method || paymentMethods[0],
       loanId: inferLoanId(cost, loans),
       active: cost.active ?? true,
+      fundedMonths: Array.isArray(cost.fundedMonths) ? cost.fundedMonths : [],
     }))
     .filter((cost) => cost.name && cost.amount > 0)
 
@@ -408,16 +413,14 @@ function App() {
       0,
     )
     const fixedTotal = data.fixedCosts
-      .filter((cost) => cost.active)
+      .filter((cost) => cost.active && !cost.fundedMonths.includes(selectedMonth))
       .reduce((sum, cost) => sum + cost.amount, 0)
-    const baseLoanPaymentTotal = data.loans.reduce(
-      (sum, loan) => sum + loan.monthlyPayment,
-      0,
-    )
-    const extraPaymentTotal = data.loans.reduce(
-      (sum, loan) => sum + loan.extraPayment,
-      0,
-    )
+    const baseLoanPaymentTotal = data.loans
+      .filter((loan) => !loan.fundedMonths.includes(selectedMonth))
+      .reduce((sum, loan) => sum + loan.monthlyPayment, 0)
+    const extraPaymentTotal = data.loans
+      .filter((loan) => !loan.fundedMonths.includes(selectedMonth))
+      .reduce((sum, loan) => sum + loan.extraPayment, 0)
     const loanPaymentTotal = baseLoanPaymentTotal + extraPaymentTotal
     const debtTotal = data.loans.reduce((sum, loan) => sum + loanPayable(loan), 0)
     const projectedDebtTotal = data.loans.reduce(
@@ -524,6 +527,7 @@ function App() {
       method: fixedDraft.method,
       loanId: fixedDraft.loanId || undefined,
       active: true,
+      fundedMonths: [],
     }
 
     setData((current) => ({
@@ -557,6 +561,7 @@ function App() {
       kind: loanDraft.kind,
       totalPayments: Number(loanDraft.totalPayments) || 0,
       paymentHistory: [],
+      fundedMonths: [],
     }
 
     setData((current) => ({
@@ -682,6 +687,38 @@ function App() {
           balance: record.balanceBefore,
           fee: record.feeBefore,
           paymentHistory: loan.paymentHistory.filter((p) => p.month !== selectedMonth),
+        }
+      }),
+    }))
+  }
+
+  function toggleLoanFunded(loanId: string) {
+    setData((current) => ({
+      ...current,
+      loans: current.loans.map((loan) => {
+        if (loan.id !== loanId) return loan
+        const isFunded = loan.fundedMonths.includes(selectedMonth)
+        return {
+          ...loan,
+          fundedMonths: isFunded
+            ? loan.fundedMonths.filter((m) => m !== selectedMonth)
+            : [...loan.fundedMonths, selectedMonth],
+        }
+      }),
+    }))
+  }
+
+  function toggleFixedFunded(costId: string) {
+    setData((current) => ({
+      ...current,
+      fixedCosts: current.fixedCosts.map((cost) => {
+        if (cost.id !== costId) return cost
+        const isFunded = cost.fundedMonths.includes(selectedMonth)
+        return {
+          ...cost,
+          fundedMonths: isFunded
+            ? cost.fundedMonths.filter((m) => m !== selectedMonth)
+            : [...cost.fundedMonths, selectedMonth],
         }
       }),
     }))
@@ -1293,6 +1330,7 @@ function App() {
                     )
 
                     const isFixedExpanded = expandedFixedIds.has(cost.id)
+                    const isFixedFunded = cost.fundedMonths.includes(selectedMonth)
 
                     return (
                       <li key={cost.id} className="stacked-item">
@@ -1310,9 +1348,23 @@ function App() {
                               <CircleDollarSign size={19} />
                             )}
                           </button>
+                          <button
+                            className={isFixedFunded ? 'check-button funded-button active' : 'check-button funded-button'}
+                            type="button"
+                            onClick={() => toggleFixedFunded(cost.id)}
+                            aria-label={isFixedFunded ? '充当済み（取り消し）' : '今月は充当済みにする'}
+                            title={isFixedFunded ? '充当済み：今月の収支から除外中（クリックで取り消し）' : '充当済み：今月の収支計算から除外する'}
+                          >
+                            <PiggyBank size={17} />
+                          </button>
                           <div className="item-main">
-                            <span>{cost.name}</span>
-                            <strong>{yen(cost.amount)}</strong>
+                            <span>
+                              {cost.name}
+                              {isFixedFunded ? <span className="funded-badge">充当済み</span> : null}
+                            </span>
+                            <strong className={isFixedFunded ? 'muted-text' : ''}>
+                              {yen(cost.amount)}
+                            </strong>
                             <small>
                               毎月{cost.dueDay}日 / {cost.method}
                               {relatedLoan ? ` / ${relatedLoan.name}` : ''}
@@ -1588,6 +1640,7 @@ function App() {
                     )
                     const paidCount = loan.paymentHistory.length
                     const isLoanExpanded = expandedLoanIds.has(loan.id)
+                    const isLoanFunded = loan.fundedMonths.includes(selectedMonth)
 
                     return (
                       <li key={loan.id} className="stacked-item">
@@ -1614,8 +1667,13 @@ function App() {
                             )}
                           </button>
                           <div className="item-main">
-                            <span>{loan.name}</span>
-                            <strong>{yen(projectedBalance)}</strong>
+                            <span>
+                              {loan.name}
+                              {isLoanFunded ? <span className="funded-badge">充当済み</span> : null}
+                            </span>
+                            <strong className={isLoanFunded ? 'muted-text' : ''}>
+                              {yen(projectedBalance)}
+                            </strong>
                             <small>
                               {loan.kind} / 残高{yen(loan.balance)}
                               {loan.fee > 0 ? ` / 手数料${yen(loan.fee)}` : ''}
@@ -1641,6 +1699,15 @@ function App() {
                               </small>
                             ) : null}
                           </div>
+                          <button
+                            className={isLoanFunded ? 'check-button funded-button active' : 'check-button funded-button'}
+                            type="button"
+                            onClick={() => toggleLoanFunded(loan.id)}
+                            aria-label={isLoanFunded ? '充当済み（取り消し）' : '今月は充当済みにする'}
+                            title={isLoanFunded ? '充当済み：今月の収支から除外中（クリックで取り消し）' : '充当済み：今月の収支計算から除外する'}
+                          >
+                            <PiggyBank size={17} />
+                          </button>
                           <button
                             className="icon-button subtle"
                             type="button"
