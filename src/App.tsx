@@ -1147,6 +1147,22 @@ function App() {
                   </button>
                 </form>
 
+                <div className="simulator">
+                  <div>
+                    <span>有効合計</span>
+                    <strong>{yen(totals.fixedTotal)}</strong>
+                  </div>
+                  <div>
+                    <span>件数</span>
+                    <strong>
+                      {data.fixedCosts.filter((c) => c.active).length}件
+                      {data.fixedCosts.some((c) => !c.active)
+                        ? ` / 停止中${data.fixedCosts.filter((c) => !c.active).length}件`
+                        : ''}
+                    </strong>
+                  </div>
+                </div>
+
                 <ul className="item-list plan-list">
                   {data.fixedCosts.map((cost) => {
                     const relatedLoan = data.loans.find(
