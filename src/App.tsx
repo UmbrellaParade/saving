@@ -313,7 +313,7 @@ function projectBalance(loan: Loan, months: number) {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<TabId>('dashboard')
+  const [activeTab, setActiveTab] = useState<TabId>('expense')
   const [selectedMonth, setSelectedMonth] = useState(() => monthKey(new Date()))
   const [data, setData] = useState<AppData>(() => loadData())
   const [expenseDraft, setExpenseDraft] = useState({
@@ -2220,14 +2220,6 @@ function App() {
       <nav className="bottom-nav" aria-label="画面切り替え">
         <button
           type="button"
-          className={activeTab === 'dashboard' ? 'active' : undefined}
-          onClick={() => setActiveTab('dashboard')}
-        >
-          <LineChart size={19} />
-          <span>月次</span>
-        </button>
-        <button
-          type="button"
           className={activeTab === 'expense' ? 'active' : undefined}
           onClick={() => setActiveTab('expense')}
         >
@@ -2236,11 +2228,19 @@ function App() {
         </button>
         <button
           type="button"
+          className={activeTab === 'dashboard' ? 'active' : undefined}
+          onClick={() => setActiveTab('dashboard')}
+        >
+          <LineChart size={19} />
+          <span>月次</span>
+        </button>
+        <button
+          type="button"
           className={activeTab === 'savings' ? 'active' : undefined}
           onClick={() => setActiveTab('savings')}
         >
           <PiggyBank size={19} />
-          <span>貯金</span>
+          <span>革命</span>
         </button>
         <button
           type="button"
@@ -2248,7 +2248,7 @@ function App() {
           onClick={() => setActiveTab('plans')}
         >
           <HandCoins size={19} />
-          <span>返済</span>
+          <span>固定</span>
         </button>
         <button
           type="button"
