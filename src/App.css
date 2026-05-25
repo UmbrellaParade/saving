@@ -544,7 +544,7 @@ button {
   color: var(--ink);
   font-size: 14px;
   line-height: 1.7;
-  min-height: 80px;
+  min-height: 120px;
   padding: 0;
   resize: vertical;
   white-space: pre-wrap;
@@ -698,6 +698,26 @@ button {
   main[data-tab="strategy"] .summary-grid {
     display: none;
   }
+
+  main[data-tab="strategy"] .content-layout {
+    margin: 0;
+  }
+
+  main[data-tab="strategy"] .strategy-panel {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    min-height: calc(100svh - 130px);
+    padding: 14px;
+  }
+
+  .strategy-board {
+    columns: 1;
+  }
+
+  .strategy-card-body {
+    min-height: 120px;
+  }
 }
 
 @media (max-width: 560px) {
@@ -720,9 +740,5 @@ button {
 
   .segmented {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .strategy-board {
-    columns: 1;
   }
 }
