@@ -693,6 +693,11 @@ button {
   .bottom-nav {
     display: flex;
   }
+
+  main[data-tab="strategy"] .month-control,
+  main[data-tab="strategy"] .summary-grid {
+    display: none;
+  }
 }
 
 @media (max-width: 560px) {

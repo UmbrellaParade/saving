@@ -849,7 +849,7 @@ function App() {
         </button>
       </header>
 
-      <main>
+      <main data-tab={activeTab}>
         <section className="month-control" aria-label="表示月">
           <button
             className="icon-button"
