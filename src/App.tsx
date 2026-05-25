@@ -81,6 +81,7 @@ type StrategyNote = {
 type SavingsGoal = {
   id: string
   name: string
+  monthlyTarget: number
   targetAmount: number
   savedAmount: number
   memo: string
@@ -256,6 +257,7 @@ function normalizeData(importedData: Partial<AppData>): AppData {
   const savingsGoals = (importedData.savingsGoals ?? []).map((goal) => ({
     id: goal.id || createId(),
     name: goal.name || '',
+    monthlyTarget: Number(goal.monthlyTarget) || 0,
     targetAmount: Number(goal.targetAmount) || 0,
     savedAmount: Number(goal.savedAmount) || 0,
     memo: goal.memo || '',
@@ -344,7 +346,7 @@ function App() {
   const [importMessage, setImportMessage] = useState('')
   const [strategyDraft, setStrategyDraft] = useState({ title: '', content: '' })
   const [isStrategyFormOpen, setIsStrategyFormOpen] = useState(false)
-  const [savingsDraft, setSavingsDraft] = useState({ name: '', targetAmount: '', savedAmount: '', memo: '' })
+  const [savingsDraft, setSavingsDraft] = useState({ name: '', monthlyTarget: '', targetAmount: '', savedAmount: '', memo: '' })
   const [editingSavingsId, setEditingSavingsId] = useState<string | null>(null)
   const [expandedLoanIds, setExpandedLoanIds] = useState<Set<string>>(new Set())
   const [expandedFixedIds, setExpandedFixedIds] = useState<Set<string>>(new Set())
@@ -411,6 +413,7 @@ function App() {
     const goal: SavingsGoal = {
       id: createId(),
       name: savingsDraft.name.trim(),
+      monthlyTarget: clampPositive(Number(savingsDraft.monthlyTarget)),
       targetAmount: clampPositive(Number(savingsDraft.targetAmount)),
       savedAmount: clampPositive(Number(savingsDraft.savedAmount)),
       memo: savingsDraft.memo.trim(),
@@ -419,7 +422,7 @@ function App() {
       ...current,
       savingsGoals: [...(current.savingsGoals ?? []), goal],
     }))
-    setSavingsDraft({ name: '', targetAmount: '', savedAmount: '', memo: '' })
+    setSavingsDraft({ name: '', monthlyTarget: '', targetAmount: '', savedAmount: '', memo: '' })
   }
 
   function updateSavingsGoal(id: string, patch: Partial<SavingsGoal>) {
@@ -1265,7 +1268,17 @@ function App() {
                   />
                 </label>
                 <label>
-                  <span>目標金額</span>
+                  <span>月の貯金希望額</span>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={savingsDraft.monthlyTarget}
+                    onChange={(e) => setSavingsDraft((d) => ({ ...d, monthlyTarget: e.target.value }))}
+                  />
+                </label>
+                <label>
+                  <span>トータル目標貯金額</span>
                   <input
                     type="number"
                     min="0"
@@ -1275,7 +1288,7 @@ function App() {
                   />
                 </label>
                 <label>
-                  <span>現在の貯金額</span>
+                  <span>現在達成済み貯金額</span>
                   <input
                     type="number"
                     min="0"
@@ -1333,7 +1346,16 @@ function App() {
                               />
                             </label>
                             <label className="mini-field">
-                              <span>目標金額</span>
+                              <span>月の貯金希望額</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={goal.monthlyTarget}
+                                onChange={(e) => updateSavingsGoal(goal.id, { monthlyTarget: clampPositive(Number(e.target.value)) })}
+                              />
+                            </label>
+                            <label className="mini-field">
+                              <span>トータル目標貯金額</span>
                               <input
                                 type="number"
                                 min="0"
@@ -1342,7 +1364,7 @@ function App() {
                               />
                             </label>
                             <label className="mini-field">
-                              <span>現在の貯金額</span>
+                              <span>現在達成済み貯金額</span>
                               <input
                                 type="number"
                                 min="0"
@@ -1382,6 +1404,9 @@ function App() {
                             <div className="item-main">
                               <span>{goal.name}</span>
                               {goal.memo && <small>{goal.memo}</small>}
+                              {goal.monthlyTarget > 0 && (
+                                <small style={{ color: 'var(--muted)' }}>月の希望額：{yen(goal.monthlyTarget)}</small>
+                              )}
                               {/* プログレスバー */}
                               <div className="savings-progress-bar">
                                 <div
@@ -1390,7 +1415,7 @@ function App() {
                                 />
                               </div>
                               <small style={{ color: 'var(--green)', fontWeight: 750 }}>
-                                {yen(goal.savedAmount)} / {yen(goal.targetAmount)}
+                                達成済み {yen(goal.savedAmount)} / 目標 {yen(goal.targetAmount)}
                                 <span style={{ color: 'var(--muted)' }}>（あと {yen(remaining)}・{pct}%）</span>
                               </small>
                             </div>
