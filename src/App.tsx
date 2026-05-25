@@ -148,6 +148,51 @@ function loadData(): AppData {
   }
 }
 
+function normalizeImportedData(importedData: Partial<AppData>): AppData {
+  const expenses = (importedData.expenses ?? [])
+    .map((expense) => ({
+      id: expense.id || createId(),
+      amount: Number(expense.amount) || 0,
+      category: expense.category || categories[0],
+      method: expense.method || paymentMethods[0],
+      memo: expense.memo || '',
+      date: expense.date || todayValue(),
+    }))
+    .filter((expense) => expense.amount > 0)
+
+  const fixedCosts = (importedData.fixedCosts ?? [])
+    .map((cost) => ({
+      id: cost.id || createId(),
+      name: cost.name || '',
+      amount: Number(cost.amount) || 0,
+      dueDay: Math.min(Math.max(Number(cost.dueDay) || 1, 1), 31),
+      method: cost.method || paymentMethods[0],
+      active: cost.active ?? true,
+    }))
+    .filter((cost) => cost.name && cost.amount > 0)
+
+  const loans = (importedData.loans ?? [])
+    .map((loan) => ({
+      id: loan.id || createId(),
+      name: loan.name || '',
+      balance: Number(loan.balance) || 0,
+      monthlyPayment: Number(loan.monthlyPayment) || 0,
+      apr: Number(loan.apr) || 0,
+      kind: loan.kind || 'ローン',
+    }))
+    .filter((loan) => loan.name && loan.balance > 0)
+
+  return {
+    expenses,
+    fixedCosts,
+    loans,
+    settings: {
+      ...defaultData.settings,
+      ...importedData.settings,
+    },
+  }
+}
+
 function estimateMonths(principal: number, monthlyPayment: number, apr: number) {
   if (principal <= 0 || monthlyPayment <= 0) return 0
   const monthlyRate = apr > 0 ? apr / 100 / 12 : 0
@@ -183,6 +228,8 @@ function App() {
     apr: '',
     kind: 'ショッピング',
   })
+  const [importText, setImportText] = useState('')
+  const [importMessage, setImportMessage] = useState('')
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(data))
@@ -375,6 +422,19 @@ function App() {
     anchor.download = `yutori-ledger-${todayValue()}.json`
     anchor.click()
     URL.revokeObjectURL(url)
+  }
+
+  function importData() {
+    try {
+      const importedData = normalizeImportedData(JSON.parse(importText))
+
+      setData(importedData)
+      setImportText('')
+      setImportMessage('この端末に読み込みました')
+      setActiveTab('dashboard')
+    } catch {
+      setImportMessage('JSONを読み込めませんでした')
+    }
   }
 
   return (
@@ -889,6 +949,32 @@ function App() {
                   ))}
                 </ul>
               </div>
+            </div>
+
+            <div className="import-panel">
+              <div>
+                <h3>データ読み込み</h3>
+                <p>貼り付けた内容はこの端末のブラウザにだけ保存されます。</p>
+              </div>
+              <textarea
+                value={importText}
+                onChange={(event) => {
+                  setImportText(event.target.value)
+                  setImportMessage('')
+                }}
+                placeholder='{"fixedCosts":[],"loans":[],"settings":{}}'
+                rows={4}
+              />
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={importData}
+                disabled={!importText.trim()}
+              >
+                <Download size={17} />
+                読み込み
+              </button>
+              {importMessage ? <p className="import-message">{importMessage}</p> : null}
             </div>
           </section>
         </div>

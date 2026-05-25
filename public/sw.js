@@ -1,4 +1,4 @@
-const cacheName = 'yutori-ledger-v1'
+const cacheName = 'yutori-ledger-v2'
 const baseUrl = self.registration.scope
 const appShell = [
   baseUrl,
@@ -29,6 +29,21 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone()
+          caches.open(cacheName).then((cache) => {
+            cache.put(`${baseUrl}index.html`, copy)
+          })
+          return response
+        })
+        .catch(() => caches.match(`${baseUrl}index.html`)),
+    )
+    return
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
