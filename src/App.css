@@ -535,6 +535,7 @@ button {
   word-break: break-word;
 }
 
+
 .strategy-card-title:focus {
   border-color: var(--blue);
   box-shadow: none;
@@ -548,10 +549,11 @@ button {
   color: var(--ink);
   font-size: 14px;
   line-height: 1.7;
-  min-height: 120px;
+  min-height: 60px;
+  overflow: hidden;
   overflow-wrap: break-word;
   padding: 0;
-  resize: vertical;
+  resize: none;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -719,10 +721,6 @@ button {
 
   .strategy-board {
     columns: 1;
-  }
-
-  .strategy-card-body {
-    min-height: 120px;
   }
 }
 

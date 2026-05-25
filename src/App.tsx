@@ -346,6 +346,12 @@ function App() {
     })
   }
 
+  function autoResize(el: HTMLTextAreaElement | null) {
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }
+
   function addStrategyNote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!strategyDraft.title.trim() && !strategyDraft.content.trim()) return
@@ -1940,18 +1946,22 @@ function App() {
                   <div key={note.id} className="strategy-card">
                     <textarea
                       className="strategy-card-title"
-                      rows={2}
+                      rows={1}
                       value={note.title}
-                      onChange={(event) =>
+                      ref={autoResize}
+                      onChange={(event) => {
                         updateStrategyNote(note.id, { title: event.target.value })
-                      }
+                        autoResize(event.target)
+                      }}
                     />
                     <textarea
                       className="strategy-card-body"
                       value={note.content}
-                      onChange={(event) =>
+                      ref={autoResize}
+                      onChange={(event) => {
                         updateStrategyNote(note.id, { content: event.target.value })
-                      }
+                        autoResize(event.target)
+                      }}
                     />
                     <div className="strategy-card-footer">
                       <span>{note.createdAt}</span>
