@@ -842,7 +842,7 @@ function App() {
       <header className="app-header">
         <div>
           <img
-            src="/header.png"
+            src={`${import.meta.env.BASE_URL}header.png`}
             alt="Umbrella Parade Life Revolution"
             className="app-header-img"
           />
