@@ -4,10 +4,13 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   CircleDollarSign,
   ClipboardList,
   CreditCard,
   Download,
+  Eye,
+  EyeOff,
   Gauge,
   Upload,
   HandCoins,
@@ -348,6 +351,8 @@ function App() {
   const [isStrategyFormOpen, setIsStrategyFormOpen] = useState(false)
   const [savingsDraft, setSavingsDraft] = useState({ name: '', monthlyTarget: '', targetAmount: '', savedAmount: '', memo: '' })
   const [editingSavingsId, setEditingSavingsId] = useState<string | null>(null)
+  const [isLoanTotalVisible, setIsLoanTotalVisible] = useState(false)
+  const [isSavingsFormOpen, setIsSavingsFormOpen] = useState(false)
   const [expandedLoanIds, setExpandedLoanIds] = useState<Set<string>>(new Set())
   const [expandedFixedIds, setExpandedFixedIds] = useState<Set<string>>(new Set())
 
@@ -440,6 +445,18 @@ function App() {
       savingsGoals: (current.savingsGoals ?? []).filter((g) => g.id !== id),
     }))
     if (editingSavingsId === id) setEditingSavingsId(null)
+  }
+
+  function moveSavingsGoal(id: string, direction: 'up' | 'down') {
+    setData((current) => {
+      const goals = [...(current.savingsGoals ?? [])]
+      const idx = goals.findIndex((g) => g.id === id)
+      if (idx < 0) return current
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+      if (swapIdx < 0 || swapIdx >= goals.length) return current
+      ;[goals[idx], goals[swapIdx]] = [goals[swapIdx], goals[idx]]
+      return { ...current, savingsGoals: goals }
+    })
   }
 
   useEffect(() => {
@@ -952,13 +969,6 @@ function App() {
             <span>{monthLabel(selectedMonth)}支出</span>
             <strong>{yen(totals.variableSpent)}</strong>
           </article>
-          <article className="metric-card">
-            <div className="metric-icon">
-              <Landmark size={20} />
-            </div>
-            <span>予測ローン総額</span>
-            <strong>{yen(totals.projectedDebtTotal)}</strong>
-          </article>
         </section>
 
         <div className="content-layout">
@@ -1255,70 +1265,24 @@ function App() {
               <PiggyBank size={22} />
             </div>
 
-            {/* 追加フォーム */}
-            <form className="entry-form" onSubmit={addSavingsGoal}>
-              <div className="settings-grid">
-                <label>
-                  <span>用途名</span>
-                  <input
-                    type="text"
-                    placeholder="例：旅行、車の頭金"
-                    value={savingsDraft.name}
-                    onChange={(e) => setSavingsDraft((d) => ({ ...d, name: e.target.value }))}
-                  />
-                </label>
-                <label>
-                  <span>月の貯金希望額</span>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={savingsDraft.monthlyTarget}
-                    onChange={(e) => setSavingsDraft((d) => ({ ...d, monthlyTarget: e.target.value }))}
-                  />
-                </label>
-                <label>
-                  <span>トータル目標貯金額</span>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={savingsDraft.targetAmount}
-                    onChange={(e) => setSavingsDraft((d) => ({ ...d, targetAmount: e.target.value }))}
-                  />
-                </label>
-                <label>
-                  <span>現在達成済み貯金額</span>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={savingsDraft.savedAmount}
-                    onChange={(e) => setSavingsDraft((d) => ({ ...d, savedAmount: e.target.value }))}
-                  />
-                </label>
-                <label>
-                  <span>メモ</span>
-                  <input
-                    type="text"
-                    placeholder="備考など"
-                    value={savingsDraft.memo}
-                    onChange={(e) => setSavingsDraft((d) => ({ ...d, memo: e.target.value }))}
-                  />
-                </label>
+            {/* ── TOP：合計サマリー ── */}
+            <div className="focus-strip" style={{ marginBottom: 16 }}>
+              <div>
+                <span>目標総額</span>
+                <strong>{yen((data.savingsGoals ?? []).reduce((s, g) => s + g.targetAmount, 0))}</strong>
               </div>
-              <button
-                className="primary-button"
-                type="submit"
-                disabled={!savingsDraft.name.trim()}
-              >
-                <Plus size={16} />
-                貯金目標を追加
-              </button>
-            </form>
+              <div>
+                <span>月の目標総額</span>
+                <strong>{yen((data.savingsGoals ?? []).reduce((s, g) => s + g.monthlyTarget, 0))}</strong>
+              </div>
+              <div>
+                <span>貯金済み合計</span>
+                <strong style={{ color: 'var(--green)' }}>{yen((data.savingsGoals ?? []).reduce((s, g) => s + g.savedAmount, 0))}</strong>
+              </div>
+            </div>
 
-            {/* 目標リスト */}
-            <div className="list-block">
+            {/* ── MIDDLE：目標一覧 ── */}
+            <div className="list-block" style={{ marginTop: 0 }}>
               <div className="list-heading">
                 <h3>貯金目標一覧</h3>
                 <span>{(data.savingsGoals ?? []).length}件</span>
@@ -1327,7 +1291,8 @@ function App() {
                 <p className="empty-text">貯金目標がまだありません</p>
               ) : (
                 <ul className="item-list">
-                  {(data.savingsGoals ?? []).map((goal) => {
+                  {(data.savingsGoals ?? []).map((goal, idx) => {
+                    const goals = data.savingsGoals ?? []
                     const pct = goal.targetAmount > 0
                       ? Math.min(100, Math.round((goal.savedAmount / goal.targetAmount) * 100))
                       : 0
@@ -1372,7 +1337,7 @@ function App() {
                                 onChange={(e) => updateSavingsGoal(goal.id, { savedAmount: clampPositive(Number(e.target.value)) })}
                               />
                             </label>
-                            <label className="mini-field">
+                            <label className="mini-field full-span">
                               <span>メモ</span>
                               <input
                                 type="text"
@@ -1401,13 +1366,35 @@ function App() {
                           </div>
                         ) : (
                           <div className="item-row">
+                            {/* 並び替えボタン */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <button
+                                className="icon-button subtle"
+                                type="button"
+                                onClick={() => moveSavingsGoal(goal.id, 'up')}
+                                disabled={idx === 0}
+                                aria-label="上へ"
+                                style={{ height: 28, width: 28, opacity: idx === 0 ? 0.3 : 1 }}
+                              >
+                                <ChevronUp size={14} />
+                              </button>
+                              <button
+                                className="icon-button subtle"
+                                type="button"
+                                onClick={() => moveSavingsGoal(goal.id, 'down')}
+                                disabled={idx === goals.length - 1}
+                                aria-label="下へ"
+                                style={{ height: 28, width: 28, opacity: idx === goals.length - 1 ? 0.3 : 1 }}
+                              >
+                                <ChevronDown size={14} />
+                              </button>
+                            </div>
                             <div className="item-main">
                               <span>{goal.name}</span>
                               {goal.memo && <small>{goal.memo}</small>}
                               {goal.monthlyTarget > 0 && (
                                 <small style={{ color: 'var(--muted)' }}>月の希望額：{yen(goal.monthlyTarget)}</small>
                               )}
-                              {/* プログレスバー */}
                               <div className="savings-progress-bar">
                                 <div
                                   className="savings-progress-fill"
@@ -1424,6 +1411,7 @@ function App() {
                               type="button"
                               onClick={() => setEditingSavingsId(goal.id)}
                               aria-label="編集"
+                              style={{ alignSelf: 'center' }}
                             >
                               <ChevronDown size={16} />
                             </button>
@@ -1436,19 +1424,79 @@ function App() {
               )}
             </div>
 
-            {/* 合計サマリー */}
-            {(data.savingsGoals ?? []).length > 0 && (
-              <div className="focus-strip" style={{ marginTop: 16 }}>
-                <div>
-                  <span>目標総額</span>
-                  <strong>{yen((data.savingsGoals ?? []).reduce((s, g) => s + g.targetAmount, 0))}</strong>
-                </div>
-                <div>
-                  <span>貯金済み合計</span>
-                  <strong style={{ color: 'var(--green)' }}>{yen((data.savingsGoals ?? []).reduce((s, g) => s + g.savedAmount, 0))}</strong>
-                </div>
-              </div>
-            )}
+            {/* ── BOTTOM：追加フォーム（折りたたみ） ── */}
+            <div style={{ marginTop: 16 }}>
+              <button
+                className="strategy-add-toggle"
+                type="button"
+                onClick={() => setIsSavingsFormOpen((v) => !v)}
+              >
+                <Plus size={16} style={{ transform: isSavingsFormOpen ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }} />
+                {isSavingsFormOpen ? '閉じる' : '目標を追加'}
+              </button>
+              {isSavingsFormOpen && (
+                <form className="strategy-form" style={{ marginTop: 10 }} onSubmit={(e) => { addSavingsGoal(e); setIsSavingsFormOpen(false) }}>
+                  <div className="settings-grid">
+                    <label>
+                      <span>用途名</span>
+                      <input
+                        type="text"
+                        placeholder="例：旅行、車の頭金"
+                        value={savingsDraft.name}
+                        onChange={(e) => setSavingsDraft((d) => ({ ...d, name: e.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      <span>月の貯金希望額</span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={savingsDraft.monthlyTarget}
+                        onChange={(e) => setSavingsDraft((d) => ({ ...d, monthlyTarget: e.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      <span>トータル目標貯金額</span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={savingsDraft.targetAmount}
+                        onChange={(e) => setSavingsDraft((d) => ({ ...d, targetAmount: e.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      <span>現在達成済み貯金額</span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={savingsDraft.savedAmount}
+                        onChange={(e) => setSavingsDraft((d) => ({ ...d, savedAmount: e.target.value }))}
+                      />
+                    </label>
+                    <label className="full-span">
+                      <span>メモ</span>
+                      <input
+                        type="text"
+                        placeholder="備考など"
+                        value={savingsDraft.memo}
+                        onChange={(e) => setSavingsDraft((d) => ({ ...d, memo: e.target.value }))}
+                      />
+                    </label>
+                  </div>
+                  <button
+                    className="primary-button"
+                    type="submit"
+                    disabled={!savingsDraft.name.trim()}
+                  >
+                    <Plus size={16} />
+                    追加する
+                  </button>
+                </form>
+              )}
+            </div>
           </section>
 
           <section
@@ -2096,6 +2144,38 @@ function App() {
                   })}
                 </ul>
               </div>
+            </div>
+
+            {/* 予測ローン総額（目隠しボタン付き） */}
+            <div className="import-panel" style={{ marginTop: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ margin: 0 }}>予測ローン総額</h3>
+                <button
+                  className="icon-button subtle"
+                  type="button"
+                  onClick={() => setIsLoanTotalVisible((v) => !v)}
+                  aria-label={isLoanTotalVisible ? '隠す' : '表示する'}
+                  title={isLoanTotalVisible ? '隠す' : '表示する'}
+                >
+                  {isLoanTotalVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {isLoanTotalVisible ? (
+                <div className="focus-strip" style={{ margin: 0 }}>
+                  <div>
+                    <span>現在の残債合計</span>
+                    <strong>{yen(totals.debtTotal)}</strong>
+                  </div>
+                  <div>
+                    <span>予測ローン総額</span>
+                    <strong>{yen(totals.projectedDebtTotal)}</strong>
+                  </div>
+                </div>
+              ) : (
+                <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>
+                  ●●●●●●　<span style={{ fontSize: 11 }}>（目のアイコンで表示）</span>
+                </p>
+              )}
             </div>
 
             <div className="import-panel">
