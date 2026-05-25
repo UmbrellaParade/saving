@@ -9,6 +9,7 @@ import {
   CreditCard,
   Download,
   Gauge,
+  Upload,
   HandCoins,
   Landmark,
   Lightbulb,
@@ -818,6 +819,10 @@ function App() {
         l.totalPayments || '',
         l.paymentHistory.length,
       ]),
+      [],
+      ['■ 戦略メモ'],
+      ['タイトル', '内容', '作成日'],
+      ...data.strategyNotes.map((n) => [n.title, n.content, n.createdAt]),
     ]
     downloadCsv(`yutori-ledger-${todayValue()}.csv`, rows)
   }
@@ -1839,19 +1844,23 @@ function App() {
 
             <div className="import-panel">
               <div>
-                <h3>CSVエクスポート</h3>
-                <p>支出・固定費・ローンをまとめて1ファイルで出力します。</p>
+                <h3>データ管理</h3>
+                <p>書き出しで全データをバックアップ。別の端末に移すときは JSON を使ってください。</p>
               </div>
-              <button className="primary-button" type="button" onClick={exportCsv}>
-                <Download size={17} />
-                CSVで保存する
-              </button>
-            </div>
 
-            <div className="import-panel">
-              <div>
-                <h3>データ読み込み</h3>
-                <p>貼り付けた内容はこの端末のブラウザにだけ保存されます。</p>
+              <div className="data-export-buttons">
+                <button className="primary-button" type="button" onClick={exportData}>
+                  <Download size={17} />
+                  JSONで書き出す（バックアップ）
+                </button>
+                <button className="secondary-button" type="button" onClick={exportCsv}>
+                  <Download size={17} />
+                  CSVで書き出す（スプレッドシート用）
+                </button>
+              </div>
+
+              <div className="import-divider">
+                <span>復元・読み込み</span>
               </div>
               <textarea
                 value={importText}
@@ -1859,8 +1868,8 @@ function App() {
                   setImportText(event.target.value)
                   setImportMessage('')
                 }}
-                placeholder='{"fixedCosts":[],"loans":[],"settings":{}}'
-                rows={4}
+                placeholder='JSONを貼り付けて読み込む'
+                rows={3}
               />
               <button
                 className="secondary-button"
@@ -1868,8 +1877,8 @@ function App() {
                 onClick={importData}
                 disabled={!importText.trim()}
               >
-                <Download size={17} />
-                読み込み
+                <Upload size={17} />
+                読み込む
               </button>
               {importMessage ? <p className="import-message">{importMessage}</p> : null}
             </div>

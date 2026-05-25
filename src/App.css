@@ -486,6 +486,33 @@ button {
   min-height: 120px;
 }
 
+.data-export-buttons {
+  display: grid;
+  gap: 8px;
+}
+
+.import-divider {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.import-divider::before,
+.import-divider::after {
+  background: var(--line);
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+
+.import-divider span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .import-panel {
   background: var(--soft);
   border: 1px solid var(--line);
