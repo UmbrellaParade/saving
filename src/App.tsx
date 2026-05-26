@@ -1372,13 +1372,41 @@ function App() {
               </div>
 
               {activeRule && (
-                <div className="rule-warning">
-                  <span className="rule-warning-icon">⚠️</span>
-                  <div>
-                    <strong>支出ブレーキ：{activeRule.category}</strong>
-                    <p>{activeRule.rule}</p>
+                <>
+                  <div className="rule-warning">
+                    <span className="rule-warning-icon">⚠️</span>
+                    <div>
+                      <strong>支出ブレーキ：{activeRule.category}</strong>
+                      <p>{activeRule.rule}</p>
+                    </div>
                   </div>
-                </div>
+                  <div className="brake-checks">
+                    <label className="check-label">
+                      <input
+                        type="checkbox"
+                        checked={brakeConfirmed}
+                        onChange={(e) => setBrakeConfirmed(e.target.checked)}
+                      />
+                      <span>ブレーキを確認した上で購入する</span>
+                    </label>
+                    <label className="check-label">
+                      <input
+                        type="checkbox"
+                        checked={isInvestmentCheck}
+                        onChange={(e) => setIsInvestmentCheck(e.target.checked)}
+                      />
+                      <span>これは投資・自己成長のための支出</span>
+                    </label>
+                    <label className="check-label">
+                      <input
+                        type="checkbox"
+                        checked={noAlternativeCheck}
+                        onChange={(e) => setNoAlternativeCheck(e.target.checked)}
+                      />
+                      <span>代替手段がなく避けられない支出</span>
+                    </label>
+                  </div>
+                </>
               )}
 
               <label>
@@ -1426,35 +1454,6 @@ function App() {
                   />
                 </label>
               </div>
-
-              {activeRule && (
-                <div className="brake-checks">
-                  <label className="check-label">
-                    <input
-                      type="checkbox"
-                      checked={brakeConfirmed}
-                      onChange={(e) => setBrakeConfirmed(e.target.checked)}
-                    />
-                    <span>ブレーキを確認した上で登録する</span>
-                  </label>
-                  <label className="check-label">
-                    <input
-                      type="checkbox"
-                      checked={isInvestmentCheck}
-                      onChange={(e) => setIsInvestmentCheck(e.target.checked)}
-                    />
-                    <span>これは投資・自己成長のための支出</span>
-                  </label>
-                  <label className="check-label">
-                    <input
-                      type="checkbox"
-                      checked={noAlternativeCheck}
-                      onChange={(e) => setNoAlternativeCheck(e.target.checked)}
-                    />
-                    <span>代替手段がなく避けられない支出</span>
-                  </label>
-                </div>
-              )}
 
               <button
                 className="primary-button"
