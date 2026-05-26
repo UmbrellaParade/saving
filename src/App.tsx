@@ -756,7 +756,7 @@ function App() {
       amount,
       dueDay: clampDueDay(Number(fixedDraft.dueDay)),
       method: fixedDraft.method,
-      loanId: fixedDraft.loanId || undefined,
+      loanId: data.loans.find((l) => l.name === fixedDraft.method)?.id || undefined,
       active: true,
       fundedMonths: [],
       genre: fixedDraft.genre,
@@ -960,9 +960,7 @@ function App() {
     }))
   }
 
-  function updateFixedCostLoan(id: string, loanId: string) {
-    updateFixedCost(id, { loanId })
-  }
+
 
   function deleteExpense(id: string) {
     setData((current) => ({
@@ -2203,25 +2201,6 @@ function App() {
                       {fixedGenres.map((g) => <option key={g}>{g}</option>)}
                     </select>
                   </label>
-                  <label>
-                    <span>関連ローン</span>
-                    <select
-                      value={fixedDraft.loanId}
-                      onChange={(event) =>
-                        setFixedDraft((current) => ({
-                          ...current,
-                          loanId: event.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">なし</option>
-                      {data.loans.map((loan) => (
-                        <option key={loan.id} value={loan.id}>
-                          {loan.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
                   <button className="secondary-button" type="submit">
                     <CalendarClock size={17} />
                     追加
@@ -2358,19 +2337,13 @@ function App() {
                                         <span>支払い方法</span>
                                         <select
                                           value={cost.method}
-                                          onChange={(event) => updateFixedCost(cost.id, { method: event.target.value })}
+                                          onChange={(event) => {
+                                            const method = event.target.value
+                                            const linkedLoan = data.loans.find((l) => l.name === method)
+                                            updateFixedCost(cost.id, { method, loanId: linkedLoan?.id || undefined })
+                                          }}
                                         >
                                           {allPaymentMethods.map((method) => <option key={method}>{method}</option>)}
-                                        </select>
-                                      </label>
-                                      <label className="mini-field">
-                                        <span>関連ローン</span>
-                                        <select
-                                          value={cost.loanId ?? ''}
-                                          onChange={(event) => updateFixedCostLoan(cost.id, event.target.value)}
-                                        >
-                                          <option value="">なし</option>
-                                          {data.loans.map((loan) => <option key={loan.id} value={loan.id}>{loan.name}</option>)}
                                         </select>
                                       </label>
                                       <div className="full-span" style={{ display: 'flex', gap: 12 }}>
