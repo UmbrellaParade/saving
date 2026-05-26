@@ -76,6 +76,7 @@ type Settings = {
   bufferTarget: number
   extraPayment?: number
   paymentCards: string[]
+  repaymentTarget: string
 }
 
 type StrategyNote = {
@@ -160,6 +161,7 @@ const defaultData: AppData = {
     bufferTarget: 0,
     extraPayment: 0,
     paymentCards: [],
+    repaymentTarget: '',
   },
   strategyNotes: [],
   savingsGoals: [],
@@ -325,6 +327,7 @@ function normalizeData(importedData: Partial<AppData>): AppData {
       bufferTarget: Number(importedSettings.bufferTarget) || 0,
       extraPayment: Number(importedSettings.extraPayment) || 0,
       paymentCards: Array.isArray(importedSettings.paymentCards) ? importedSettings.paymentCards : [],
+      repaymentTarget: importedSettings.repaymentTarget || '',
     },
     strategyNotes,
     savingsGoals,
@@ -639,11 +642,6 @@ function App() {
     }
   }, [data.fixedCosts, data.loans, data.settings, forecastMonths, monthlyExpenses])
 
-  const nextLoanTarget = useMemo(() => {
-    return [...data.loans].sort(
-      (a, b) => b.apr - a.apr || loanPayable(b) - loanPayable(a),
-    )[0]
-  }, [data.loans])
 
   const recentExpenses = [...monthlyExpenses]
     .sort((a, b) => b.date.localeCompare(a.date))
@@ -1241,7 +1239,13 @@ function App() {
             <div className="focus-strip">
               <div>
                 <span>返済ターゲット</span>
-                <strong>{nextLoanTarget?.name ?? '未登録'}</strong>
+                <input
+                  type="text"
+                  value={data.settings.repaymentTarget}
+                  onChange={(e) => updateSettings({ repaymentTarget: e.target.value })}
+                  placeholder="例：メルカリローン"
+                  style={{ fontSize: 15, fontWeight: 750, minHeight: 36, marginTop: 2 }}
+                />
               </div>
               <div>
                 <span>完済目安</span>
