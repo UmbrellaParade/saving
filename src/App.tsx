@@ -724,7 +724,7 @@ function App() {
       ...current,
       amount: '',
       memo: '',
-      date: `${selectedMonth}-01`,
+      date: todayValue().startsWith(selectedMonth) ? todayValue() : `${selectedMonth}-01`,
     }))
     setBrakeConfirmed(false)
     setIsInvestmentCheck(false)
