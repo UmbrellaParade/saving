@@ -1186,13 +1186,16 @@ function App() {
             <div className="focus-strip">
               <div>
                 <span>返済ターゲット</span>
-                <input
-                  type="text"
+                <select
                   value={data.settings.repaymentTarget}
                   onChange={(e) => updateSettings({ repaymentTarget: e.target.value })}
-                  placeholder="例：クレジット1ローン"
                   style={{ fontSize: 15, fontWeight: 750, minHeight: 36, marginTop: 2 }}
-                />
+                >
+                  <option value="">-- 未選択 --</option>
+                  {data.loans.map((loan) => (
+                    <option key={loan.id} value={loan.name}>{loan.name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <span>完済目安</span>
