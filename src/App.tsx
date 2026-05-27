@@ -113,6 +113,11 @@ type IncomeItem = {
   updatedAt: string
 }
 
+type Card = {
+  id: string
+  name: string
+}
+
 type AppData = {
   expenses: Expense[]
   fixedCosts: FixedCost[]
@@ -122,9 +127,10 @@ type AppData = {
   savingsGoals: SavingsGoal[]
   expenseRules: ExpenseRule[]
   incomeItems: IncomeItem[]
+  cards: Card[]
 }
 
-type TabId = 'dashboard' | 'expense' | 'savings' | 'plans' | 'strategy'
+type TabId = 'dashboard' | 'expense' | 'savings' | 'plans' | 'strategy' | 'cards'
 
 const storageKey = 'yutori-ledger-data-v1'
 
@@ -169,6 +175,7 @@ const defaultData: AppData = {
   savingsGoals: [],
   expenseRules: [],
   incomeItems: [],
+  cards: [],
 }
 
 const currencyFormatter = new Intl.NumberFormat('ja-JP', {
@@ -320,6 +327,13 @@ function normalizeData(importedData: Partial<AppData>): AppData {
     updatedAt: item.updatedAt || todayValue(),
   }))
 
+  const cards = (importedData.cards ?? [])
+    .map((card) => ({
+      id: card.id || createId(),
+      name: card.name || '',
+    }))
+    .filter((card) => card.name)
+
   return {
     expenses,
     fixedCosts,
@@ -336,6 +350,7 @@ function normalizeData(importedData: Partial<AppData>): AppData {
     savingsGoals,
     expenseRules,
     incomeItems,
+    cards,
   }
 }
 
@@ -426,6 +441,7 @@ function App() {
   const [loanDraftAprType, setLoanDraftAprType] = useState<'annual' | 'total'>('annual')
   const [expandedLoanIds, setExpandedLoanIds] = useState<Set<string>>(new Set())
   const [expandedFixedIds, setExpandedFixedIds] = useState<Set<string>>(new Set())
+  const [cardDraftName, setCardDraftName] = useState('')
 
   function toggleLoanExpanded(id: string) {
     setExpandedLoanIds((current) => {
@@ -568,6 +584,17 @@ function App() {
     if (editingIncomeId === id) setEditingIncomeId(null)
   }
 
+  function addCard() {
+    const name = cardDraftName.trim()
+    if (!name) return
+    setData((c) => ({ ...c, cards: [...(c.cards ?? []), { id: createId(), name }] }))
+    setCardDraftName('')
+  }
+
+  function deleteCard(id: string) {
+    setData((c) => ({ ...c, cards: (c.cards ?? []).filter((card) => card.id !== id) }))
+  }
+
   function moveSavingsGoal(id: string, direction: 'up' | 'down') {
     setData((current) => {
       const goals = [...(current.savingsGoals ?? [])]
@@ -697,8 +724,8 @@ function App() {
   }, [data.expenses, selectedYear])
 
   const allPaymentMethods = useMemo(
-    () => [...paymentMethods, ...data.loans.map((l) => l.name).filter(Boolean)],
-    [data.loans],
+    () => [...paymentMethods, ...(data.cards ?? []).map((c) => c.name).filter(Boolean)],
+    [data.cards],
   )
 
   const activeRule = useMemo(
@@ -2463,16 +2490,29 @@ function App() {
                   <h3>ローン</h3>
                   <label>
                     <span>名前</span>
-                    <input
-                      value={loanDraft.name}
-                      onChange={(event) =>
-                        setLoanDraft((current) => ({
-                          ...current,
-                          name: event.target.value,
-                        }))
-                      }
-                      placeholder="カードローン"
-                    />
+                    {(data.cards ?? []).length > 0 ? (
+                      <select
+                        value={loanDraft.name}
+                        onChange={(event) =>
+                          setLoanDraft((current) => ({
+                            ...current,
+                            name: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">-- カードを選択 --</option>
+                        {(data.cards ?? []).map((card) => (
+                          <option key={card.id} value={card.name}>{card.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        value={loanDraft.name}
+                        readOnly
+                        placeholder="まず「カード」タブで登録してください"
+                        style={{ color: 'var(--muted)', cursor: 'default' }}
+                      />
+                    )}
                   </label>
                   <div className="inline-fields">
                     <label>
@@ -2731,12 +2771,28 @@ function App() {
                         {isLoanExpanded && <div className="edit-grid">
                           <label className="mini-field">
                             <span>名前</span>
-                            <input
-                              value={loan.name}
-                              onChange={(event) =>
-                                updateLoan(loan.id, { name: event.target.value })
-                              }
-                            />
+                            {(data.cards ?? []).length > 0 ? (
+                              <select
+                                value={loan.name}
+                                onChange={(event) =>
+                                  updateLoan(loan.id, { name: event.target.value })
+                                }
+                              >
+                                {!(data.cards ?? []).some((c) => c.name === loan.name) && loan.name && (
+                                  <option value={loan.name}>{loan.name}（未登録）</option>
+                                )}
+                                {(data.cards ?? []).map((card) => (
+                                  <option key={card.id} value={card.name}>{card.name}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                value={loan.name}
+                                onChange={(event) =>
+                                  updateLoan(loan.id, { name: event.target.value })
+                                }
+                              />
+                            )}
                           </label>
                           <label className="mini-field">
                             <span>残高</span>
@@ -3033,6 +3089,71 @@ function App() {
               </div>
             )}
           </section>
+
+          {/* ── カード登録パネル ── */}
+          <section
+            className={activeTab === 'cards' ? 'panel active-panel' : 'panel'}
+            aria-label="カード登録"
+          >
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Cards</p>
+                <h2>カード・口座登録</h2>
+              </div>
+              <CreditCard size={22} />
+            </div>
+
+            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.6 }}>
+              クレジットカード・デビットカード・奨学金など支払いに使うカード・口座を登録してください。登録すると固定費の支払い方法やローン名として選べるようになります。
+            </p>
+
+            <div className="compact-form" style={{ marginBottom: 16 }}>
+              <label>
+                <span>カード・口座名</span>
+                <input
+                  type="text"
+                  value={cardDraftName}
+                  onChange={(e) => setCardDraftName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCard() } }}
+                  placeholder="例：楽天カード、奨学金、イオンカード"
+                />
+              </label>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={addCard}
+                disabled={!cardDraftName.trim()}
+              >
+                <Plus size={17} />
+                登録
+              </button>
+            </div>
+
+            {(data.cards ?? []).length === 0 ? (
+              <p className="empty-text">まだカードが登録されていません</p>
+            ) : (
+              <ul className="item-list">
+                {(data.cards ?? []).map((card) => (
+                  <li key={card.id}>
+                    <div className="item-row">
+                      <div className="item-main">
+                        <span>{card.name}</span>
+                      </div>
+                      <button
+                        className="icon-button subtle"
+                        type="button"
+                        onClick={() => deleteCard(card.id)}
+                        aria-label="削除"
+                        title="削除"
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
       </main>
 
@@ -3076,6 +3197,14 @@ function App() {
         >
           <Lightbulb size={19} />
           <span>戦略</span>
+        </button>
+        <button
+          type="button"
+          className={activeTab === 'cards' ? 'active' : undefined}
+          onClick={() => setActiveTab('cards')}
+        >
+          <CreditCard size={19} />
+          <span>カード</span>
         </button>
       </nav>
     </div>
