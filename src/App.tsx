@@ -442,6 +442,8 @@ function App() {
   const [expandedLoanIds, setExpandedLoanIds] = useState<Set<string>>(new Set())
   const [expandedFixedIds, setExpandedFixedIds] = useState<Set<string>>(new Set())
   const [cardDraftName, setCardDraftName] = useState('')
+  const [editingCardId, setEditingCardId] = useState<string | null>(null)
+  const [editingCardName, setEditingCardName] = useState('')
 
   function toggleLoanExpanded(id: string) {
     setExpandedLoanIds((current) => {
@@ -593,6 +595,17 @@ function App() {
 
   function deleteCard(id: string) {
     setData((c) => ({ ...c, cards: (c.cards ?? []).filter((card) => card.id !== id) }))
+    if (editingCardId === id) setEditingCardId(null)
+  }
+
+  function updateCard(id: string, name: string) {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setData((c) => ({
+      ...c,
+      cards: (c.cards ?? []).map((card) => card.id === id ? { ...card, name: trimmed } : card),
+    }))
+    setEditingCardId(null)
   }
 
   function moveSavingsGoal(id: string, direction: 'up' | 'down') {
@@ -3134,21 +3147,59 @@ function App() {
             ) : (
               <ul className="item-list">
                 {(data.cards ?? []).map((card) => (
-                  <li key={card.id}>
-                    <div className="item-row">
-                      <div className="item-main">
-                        <span>{card.name}</span>
+                  <li key={card.id} className="stacked-item">
+                    {editingCardId === card.id ? (
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
+                        <input
+                          type="text"
+                          value={editingCardName}
+                          onChange={(e) => setEditingCardName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') updateCard(card.id, editingCardName)
+                            if (e.key === 'Escape') setEditingCardId(null)
+                          }}
+                          style={{ flex: 1 }}
+                          autoFocus
+                        />
+                        <button
+                          className="secondary-button"
+                          type="button"
+                          onClick={() => updateCard(card.id, editingCardName)}
+                          disabled={!editingCardName.trim()}
+                          style={{ whiteSpace: 'nowrap' }}
+                        >
+                          保存
+                        </button>
+                        <button
+                          className="icon-button subtle"
+                          type="button"
+                          onClick={() => setEditingCardId(null)}
+                          aria-label="キャンセル"
+                        >
+                          ✕
+                        </button>
                       </div>
-                      <button
-                        className="icon-button subtle"
-                        type="button"
-                        onClick={() => deleteCard(card.id)}
-                        aria-label="削除"
-                        title="削除"
-                      >
-                        <Trash2 size={17} />
-                      </button>
-                    </div>
+                    ) : (
+                      <div className="item-row">
+                        <div
+                          className="item-main"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => { setEditingCardId(card.id); setEditingCardName(card.name) }}
+                        >
+                          <span>{card.name}</span>
+                          <small style={{ color: 'var(--muted)' }}>タップで編集</small>
+                        </div>
+                        <button
+                          className="icon-button subtle"
+                          type="button"
+                          onClick={() => deleteCard(card.id)}
+                          aria-label="削除"
+                          title="削除"
+                        >
+                          <Trash2 size={17} />
+                        </button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
